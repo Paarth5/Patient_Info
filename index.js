@@ -2,10 +2,13 @@ const { log } = require("console");
 const express = require("express");
 const mongoose = require("mongoose");
 const Patient = require("./models/user.js");
+const methodOverride = require("method-override");
 const path = require("path");
 const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+app.use(methodOverride("_method"));
+app.use(express.urlencoded({ extended: true }));
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/patients")
@@ -34,6 +37,14 @@ app.post("/signup", async (req, res) => {
   await newPatient.save();
   res.redirect("/login");
 });
+app.get("/home/:id", async (req, res) => {
+  const reqPatient = await Patient.findById(req.params.id);
+  res.render("home", { reqPatient });
+});
+app.put("/home/:id", async (req, res) => {
+  await Patient.findByIdAndUpdate(req.params.id, { ...req.body.user });
+  res.redirect(`/home/${req.params.id}`);
+});
 app.post("/home", async (req, res) => {
   const { user } = req.body;
   const patients = await Patient.find({ username: user.username });
@@ -48,6 +59,11 @@ app.post("/home", async (req, res) => {
   else {
     res.redirect("/login");
   }
+});
+
+app.get("/patient/:id/edit", async (req, res) => {
+  const patient = await Patient.findById(req.params.id);
+  res.render("edit", { patient });
 });
 
 app.listen(3000, () => {
